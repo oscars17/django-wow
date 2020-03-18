@@ -3,8 +3,8 @@ try:
 except ImportError:
     pass
 from requests_oauthlib import OAuth2Session
-from wow_oauth import constants
-from wow_oauth.urls import account_urls
+from django_wow import constants
+from django_wow.urls import account_urls
 from . import error_messages
 
 
