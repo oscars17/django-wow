@@ -11,11 +11,11 @@ from urls import account_urls
 class BattleNetOAuth(object):
 
     def check_access_token(self, f):
-        def wrapper(**args):
-            token = args.get('access_token')
+        def wrapper(**kwargs):
+            token = kwargs.get('access_token')
             if token:
                 return self._set_access_token(token)
-            return f(*args)
+            return f(*kwargs)
         return wrapper
 
     def __init__(self, version=None, key=None, secret=None, region=None, redirect_uri=None, access_token=None):
