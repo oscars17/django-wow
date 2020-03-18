@@ -5,7 +5,7 @@ except ImportError:
 from requests_oauthlib import OAuth2Session
 from . import constants
 from . import error_messages
-from urls import account_urls
+from .urls import account_urls
 
 
 class BattleNetOAuth(object):
@@ -69,9 +69,21 @@ class BattleNetOAuth(object):
         else:
             self.oauth.token = token
 
-    def _make_request(self, url):
+    def _make_request(self, endpoint, base_url=None):
         if not self.access_token:
-            raise ValueError(error_messages.ACCESS_TOKEN)
+            raise ValueError('No access token available.')
+
+        if not self.oauth:
+            self.oauth = OAuth2Session(
+                self.BNET_KEY, redirect_uri=self.BNET_REDIRECT_URI)
+
+        if not base_url:
+            base_url = constants.BASE_ENDPOINT_URL
+        r = self.oauth.get(base_url % self.region + endpoint)
+        if r.status_code == 200:
+            return r.status_code, r.json()
+        else:
+            return r.status_code, []
 
     def get_authorization_url(self):
         if not self.BNET_REDIRECT_URI:
