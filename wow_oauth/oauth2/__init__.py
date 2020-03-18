@@ -3,9 +3,9 @@ try:
 except ImportError:
     pass
 from requests_oauthlib import OAuth2Session
-from . import constants
+from wow_oauth import constants
+from wow_oauth.urls import account_urls
 from . import error_messages
-from .urls import account_urls
 
 
 class BattleNetOAuth(object):
