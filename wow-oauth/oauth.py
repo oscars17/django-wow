@@ -5,9 +5,18 @@ except ImportError:
 from requests_oauthlib import OAuth2Session
 from . import constants
 from . import error_messages
+from urls import account_urls
 
 
 class BattleNetOAuth(object):
+
+    def check_access_token(self, f):
+        def wrapper(**args):
+            token = args.get('access_token')
+            if token:
+                return self._set_access_token(token)
+            return f(*args)
+        return wrapper
 
     def __init__(self, version=None, key=None, secret=None, region=None, redirect_uri=None, access_token=None):
         if version:
@@ -44,7 +53,7 @@ class BattleNetOAuth(object):
             try:
                 self.BNET_REDIRECT_URI = settings.BNET_REDIRECT_URI
             except (AttributeError, ImportError):
-                raise ValueError(error_messages.BNET_REDIRECT_URI_ERROR)
+                raise ValueError(error_messages.BNET_REDIRECT_URI)
         self.scope = 'wow.profile'
         self.access_token = None
         self.oauth = None
@@ -60,18 +69,45 @@ class BattleNetOAuth(object):
         else:
             self.oauth.token = token
 
-    def _make_request(self):
+    def _make_request(self, url):
         if not self.access_token:
-            raise ValueError('No access token available')
+            raise ValueError(error_messages.ACCESS_TOKEN)
 
     def get_authorization_url(self):
         if not self.BNET_REDIRECT_URI:
-            raise ValueError(error_messages.BNET_REDIRECT_URI_ERROR)
+            raise ValueError(error_messages.BNET_REDIRECT_URI)
         if not self.BNET_KEY:
             raise ValueError(error_messages.BNET_KEY)
         self.oauth = OAuth2Session(self.BNET_KEY, redirect_uri=self.BNET_REDIRECT_URI, scope=self.scope)
         auth_url, state = self.oauth.autorization_url(constants.BNET_AUTH_URL)
         return auth_url, state
 
-    def get_access_token(self, access_code):
-        pass
+    def retrieve_access_token(self, access_code):
+        if not access_code:
+            raise ValueError(error_messages.ACCESS_CODE)
+
+        if not self.BNET_SECRET:
+            raise ValueError(error_messages.BNET_SECRET)
+
+        if not self.BNET_REDIRECT_URI:
+            raise ValueError(error_messages.BNET_REDIRECT_URI)
+        self.oauth = OAuth2Session(
+            self.BNET_KEY, redirect_uri=self.BNET_REDIRECT_URI, scope='wow.profile')
+        token_data = self.oauth.fetch_token(
+            constants.BNET_TOKEN_URL % self.region,
+            code=access_code,
+            client_secret=self.BNET_SECRET)
+        self.access_token = token_data['access_token']
+        return token_data
+
+    @check_access_token
+    def get_battletag(self, access_token=None):
+        return self._make_request(account_urls.battletag_url)
+
+    @check_access_token
+    def get_profile(self, access_token=None):
+        return self._make_request(account_urls.profile_url)
+
+    @check_access_token
+    def get_account_id(self, access_token=None):
+        return self._make_request(account_urls.account_id_url)
