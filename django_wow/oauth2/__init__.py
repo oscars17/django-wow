@@ -4,11 +4,11 @@ except ImportError:
     pass
 from requests_oauthlib import OAuth2Session
 from django_wow import constants
-from django_wow.urls import account_urls
 from . import error_messages
+from . import account_urls
 
 
-class BattleNetOAuth(object):
+class BattleNetOAuth2(object):
 
     def check_access_token(self, f):
         def wrapper(**kwargs):

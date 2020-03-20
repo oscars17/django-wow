@@ -7,7 +7,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='django-wow',
-    version='0.0.1',
+    version='0.0.2',
     packages=['django_wow',
               'django_wow.community',
               'django_wow.oauth2'],
