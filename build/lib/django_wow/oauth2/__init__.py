@@ -6,16 +6,20 @@ from requests_oauthlib import OAuth2Session
 from django_wow import constants
 from . import error_messages
 from . import account_urls
+import functools
 
 
 class BattleNetOAuth2(object):
 
-    def check_access_token(self, f):
-        def wrapper(**kwargs):
-            token = kwargs.get('access_token')
+    def check_access_token(f):
+        @functools.wraps(f)
+        def wrapper(self, *args):
+            token = args[0]
             if token:
-                return self._set_access_token(token)
-            return f(*kwargs)
+                self._set_access_token(token)
+                return f(self, *args)
+            else:
+                raise ValueError('Access token is not set')
         return wrapper
 
     def __init__(self, version=None, key=None, secret=None, region=None, redirect_uri=None, access_token=None):
@@ -41,8 +45,10 @@ class BattleNetOAuth2(object):
                 self.BNET_SECRET = settings.BNET_SECRET
             except (AttributeError, ImportError):
                 raise ValueError(error_messages.BNET_SECRET)
-        region = region.upper()
-
+        if region:
+            region = region.upper()
+        else:
+            region = 'EU'
         if region in constants.AVAILABLE_REGIONS:
             self.region = region
         else:
@@ -91,7 +97,7 @@ class BattleNetOAuth2(object):
         if not self.BNET_KEY:
             raise ValueError(error_messages.BNET_KEY)
         self.oauth = OAuth2Session(self.BNET_KEY, redirect_uri=self.BNET_REDIRECT_URI, scope=self.scope)
-        auth_url, state = self.oauth.autorization_url(constants.BNET_AUTH_URL)
+        auth_url, state = self.oauth.authorization_url(constants.BNET_AUTH_URL % (self.region))
         return auth_url, state
 
     def retrieve_access_token(self, access_code):
