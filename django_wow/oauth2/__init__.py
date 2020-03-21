@@ -9,27 +9,29 @@ from . import account_urls
 import functools
 
 
+def check_access_token(f):
+    @functools.wraps(f)
+    def wrapper(self, *args):
+        token = args[0]
+        if token:
+            self._set_access_token(token)
+            return f(self, *args)
+        else:
+            raise ValueError('Access token is not set')
+    return wrapper
+
+
 class BattleNetOAuth2(object):
 
-    def check_access_token(f):
-        @functools.wraps(f)
-        def wrapper(self, *args):
-            token = args[0]
-            if token:
-                self._set_access_token(token)
-                return f(self, *args)
-            else:
-                raise ValueError('Access token is not set')
-        return wrapper
-
     def __init__(self, version=None, key=None, secret=None, region=None, redirect_uri=None, access_token=None):
+        self.current_namespace = None
         if version:
             try:
-                self.namespace = constants.NAMESPACES[version]
+                self.namespace_dict = constants.NAMESPACES[version]
             except KeyError:
                 raise ValueError(error_messages.NAMESPACES)
         else:
-            self.namespace = constants.NAMESPACES['retail']
+            self.namespace_dict = constants.NAMESPACES['retail']
         if key:
             self.BNET_KEY = key
         else:
@@ -78,14 +80,14 @@ class BattleNetOAuth2(object):
     def _make_request(self, endpoint, base_url=None):
         if not self.access_token:
             raise ValueError('No access token available.')
-
         if not self.oauth:
             self.oauth = OAuth2Session(
                 self.BNET_KEY, redirect_uri=self.BNET_REDIRECT_URI)
-
         if not base_url:
             base_url = constants.BASE_ENDPOINT_URL
-        r = self.oauth.get(base_url % self.region + endpoint)
+        url = base_url % self.region + endpoint[1:]
+        r = self.oauth.get(url)
+        self.current_namespace = None
         if r.status_code == 200:
             return r.status_code, r.json()
         else:
@@ -103,7 +105,6 @@ class BattleNetOAuth2(object):
     def retrieve_access_token(self, access_code):
         if not access_code:
             raise ValueError(error_messages.ACCESS_CODE)
-
         if not self.BNET_SECRET:
             raise ValueError(error_messages.BNET_SECRET)
 
@@ -119,13 +120,9 @@ class BattleNetOAuth2(object):
         return token_data
 
     @check_access_token
-    def get_battletag(self, access_token=None):
-        return self._make_request(account_urls.battletag_url)
+    def get_user_info(self, access_token=None):
+        return self._make_request(account_urls.user_info_url)
 
     @check_access_token
-    def get_profile(self, access_token=None):
-        return self._make_request(account_urls.profile_url)
-
-    @check_access_token
-    def get_account_id(self, access_token=None):
-        return self._make_request(account_urls.account_id_url)
+    def check_token(self, access_token=None):
+        return self._make_request(account_urls.check_token_url)

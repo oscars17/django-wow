@@ -8,12 +8,12 @@ AVAILABLE_REGIONS = [
 
 NAMESPACES = {
     'retail': {
-        'static': '',
-        'dynamic': '',
-        'profile': '',
+        'static': 'static-%s',
+        'dynamic': 'dynamic-%s',
+        'profile': 'profile-%s',
     },
     'classic': {
-        'static': '-classic',
+        'static': 'classic',
     },
 }
 

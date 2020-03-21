@@ -1,3 +1,4 @@
-battletag_url = '/account/user/battletag'
-profile_url = '/wow/user/characters'
-account_id_url = '/account/user/id'
+user_info_url = '/oauth/userinfo'
+check_token_url = '/oauth/check_token'
+
+
